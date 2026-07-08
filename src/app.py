@@ -3,13 +3,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from settings import Settings
 from quart import Quart
 
+
 def create_app():
     app = Quart(__name__)
 
     # TODO: conftest
-    
+
     settings: Settings = Settings()
-    app.config['SETTINGS'] = settings
+    app.config["SETTINGS"] = settings
     app.url_map.strict_slashes = False
 
     # Postgres
@@ -18,10 +19,10 @@ def create_app():
     AsyncSessionLocal = async_sessionmaker(
         bind=async_engine, class_=AsyncSession, expire_on_commit=False
     )
-    app.config['POOL'] = AsyncSessionLocal
+    app.config["POOL"] = AsyncSessionLocal
 
     # Services
-    app.config['TODO_DAO'] = TodoDao(AsyncSessionLocal)
+    app.config["TODO_DAO"] = TodoDao(AsyncSessionLocal)
 
     @app.before_serving
     async def startup():
@@ -33,11 +34,13 @@ def create_app():
         await async_engine.dispose()
 
     # Blueprints
-    
+
     from routes.home_bp import home_bp
+
     app.register_blueprint(home_bp)
 
     return app
+
 
 if __name__ == "__main__":
     app = create_app()
