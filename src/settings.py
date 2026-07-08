@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     PG_HOST: str = Field(...)
     PG_PORT: str = Field(...)
 
+    APP_PORT: str = Field(...)
+
     def DB_URL(self):
         return f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}"
 

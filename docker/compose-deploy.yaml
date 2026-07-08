@@ -1,0 +1,37 @@
+name: prod_deploy
+
+services:
+  db_migration:
+    env_file: ../.env
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - PG_HOST=host.docker.internal
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    networks:
+      - db_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  db_app:
+    env_file: ../.env
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - PG_HOST=host.docker.internal
+    ports:
+      - "${APP_PORT-5000}:${APP_PORT-5000}"
+    restart: unless-stopped
+    command: ["uv", "run", "hypercorn", "src.app:create_app()", "--bind", "0.0.0.0:${APP_PORT}"]
+    networks:
+      - db_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db_migration:
+        condition: service_completed_successfully
+
+networks:
+  db_network:

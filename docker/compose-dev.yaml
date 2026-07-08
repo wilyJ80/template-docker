@@ -1,3 +1,5 @@
+name: dev_env
+
 services:
   db_dev_postgresql:
     env_file: ../.env

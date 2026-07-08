@@ -1,3 +1,5 @@
+name: ci-env
+
 x-test-variables: &test-env
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: mysecretpassword
