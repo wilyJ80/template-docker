@@ -1,0 +1,47 @@
+services:
+  db_dev_postgresql:
+    env_file: ../.env
+    image: postgres:18-trixie
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${PG_PORT}:5432"
+    networks:
+      - db_network
+
+  db_dev_migration:
+    env_file: ../.env
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - PG_HOST=db_dev_postgresql
+      - PG_PORT=5432
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    depends_on: 
+      db_dev_postgresql:
+        condition: service_healthy
+    networks:
+      - db_network
+
+  db_dev_seeder:
+    env_file: ../.env
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - PG_HOST=db_dev_postgresql
+      - PG_PORT=5432
+    command: ["uv", "run", "src/seed.py"]
+    depends_on: 
+      db_dev_migration:
+        condition: service_completed_successfully
+    networks:
+      - db_network
+
+networks:
+  db_network:

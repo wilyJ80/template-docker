@@ -1,0 +1,87 @@
+x-test-variables: &test-env
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: mysecretpassword
+  POSTGRES_DB: db
+  PG_HOST: db_test_postgresql
+  PG_PORT: 5432
+  APP_PORT: 5000
+
+services:
+  db_test_lint:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["uv", "run", "ty", "check"]
+    environment:
+      <<: *test-env
+
+  db_test_codestyle:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["uv", "run", "ruff", "check"]
+    environment:
+      <<: *test-env
+    depends_on:
+      db_test_lint:
+        condition: service_completed_successfully
+
+  db_test_format:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["uv", "run", "ruff", "format", "--check"]
+    environment:
+      <<: *test-env
+    depends_on:
+      db_test_codestyle:
+        condition: service_completed_successfully
+
+  db_test_postgresql:
+    image: postgres:18-trixie
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      <<: *test-env
+    networks:
+      - db_network
+    depends_on:
+      db_test_format:
+        condition: service_completed_successfully
+
+  db_test_migration:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["uv", "run", "src/migrate.py"]
+    environment:
+      <<: *test-env
+    networks:
+      - db_network
+    depends_on:
+      db_test_format:
+        condition: service_completed_successfully
+      db_test_postgresql:
+        condition: service_healthy
+
+  db_test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["uv", "run", "pytest", "--cov", "--durations=0"]
+    environment:
+      <<: *test-env
+    networks:
+      - db_network
+    depends_on:
+      db_test_migration:
+        condition: service_completed_successfully
+      db_test_postgresql:
+        condition: service_healthy
+
+networks:
+  db_network:
