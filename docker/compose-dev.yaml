@@ -13,7 +13,7 @@ services:
     networks:
       - db_network
 
-  db_dev_migration:
+  db_dev_db_setup:
     env_file: ../.env
     build:
       context: ..
@@ -21,25 +21,14 @@ services:
     environment:
       - PG_HOST=db_dev_postgresql
       - PG_PORT=5432
-    command: ["uv", "run", "alembic", "upgrade", "head"]
+    command: >
+      bash -c "
+      uv run alembic upgrade head &&
+      uv run src/seed.py
+      "
     depends_on: 
       db_dev_postgresql:
         condition: service_healthy
-    networks:
-      - db_network
-
-  db_dev_seeder:
-    env_file: ../.env
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    environment:
-      - PG_HOST=db_dev_postgresql
-      - PG_PORT=5432
-    command: ["uv", "run", "src/seed.py"]
-    depends_on: 
-      db_dev_migration:
-        condition: service_completed_successfully
     networks:
       - db_network
 
