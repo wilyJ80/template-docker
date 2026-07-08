@@ -7,35 +7,18 @@ x-test-variables: &test-env
   APP_PORT: 5000
 
 services:
-  db_test_lint:
+  db_static_checks:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    command: ["uv", "run", "ty", "check"]
+    command: >
+      bash -c "
+      uv run ty check &&
+      uv run ruff check &&
+      uv run ruff format --check
+      "
     environment:
       <<: *test-env
-
-  db_test_codestyle:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    command: ["uv", "run", "ruff", "check"]
-    environment:
-      <<: *test-env
-    depends_on:
-      db_test_lint:
-        condition: service_completed_successfully
-
-  db_test_format:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    command: ["uv", "run", "ruff", "format", "--check"]
-    environment:
-      <<: *test-env
-    depends_on:
-      db_test_codestyle:
-        condition: service_completed_successfully
 
   db_test_postgresql:
     image: postgres:18-trixie
@@ -50,35 +33,24 @@ services:
     networks:
       - db_network
     depends_on:
-      db_test_format:
+      db_static_checks:
         condition: service_completed_successfully
 
-  db_test_migration:
+  db_tests:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    command: ["uv", "run", "src/migrate.py"]
+    command: >
+      bash -c "
+      uv run alembic upgrade head &&
+      uv run pytest --cov --durations=0
+      "
     environment:
       <<: *test-env
     networks:
       - db_network
     depends_on:
-      db_test_format:
-        condition: service_completed_successfully
-      db_test_postgresql:
-        condition: service_healthy
-
-  db_test:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    command: ["uv", "run", "pytest", "--cov", "--durations=0"]
-    environment:
-      <<: *test-env
-    networks:
-      - db_network
-    depends_on:
-      db_test_migration:
+      db_static_checks:
         condition: service_completed_successfully
       db_test_postgresql:
         condition: service_healthy

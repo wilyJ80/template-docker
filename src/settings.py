@@ -1,5 +1,7 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
 class Settings(BaseSettings):
     POSTGRES_USER: str = Field(...)
     POSTGRES_PASSWORD: str = Field(...)
@@ -11,4 +13,4 @@ class Settings(BaseSettings):
     def DB_URL(self):
         return f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}"
 
-    model_config = SettingsConfigDict(env_file='.env')
+    model_config = SettingsConfigDict(env_file=".env")
