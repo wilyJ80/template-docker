@@ -1,8 +1,7 @@
 from typing import Sequence
 from sqlalchemy import select
 from models import Todo
-from pool_config import AsyncSession
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 
 class TodoDao:
