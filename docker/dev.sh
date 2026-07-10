@@ -7,7 +7,7 @@ echo "[INFO] Discarding previous containers..."
 docker compose --env-file .env -f docker/compose-dev.yaml down --remove-orphans -v
 
 echo "[INFO] Building project..."
-docker compose --env-file .env -f docker/compose-ci.yaml build
+docker compose --env-file .env -f docker/compose-dev.yaml build
 
 echo "[INFO] Preparing services..."
 docker compose --env-file .env -f docker/compose-dev.yaml up -d
